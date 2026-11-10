@@ -371,7 +371,18 @@ ORDER BY 1
 
 
 
-
+D42-SuperAdmin
+D42-Discovery-Admin
+D42-Network-Eng
+D42-Server-Admin
+D42-Cloud-Ops
+D42-Storage-DBA
+D42-App-Owner
+D42-Security-PKI
+D42-EUC-Support
+D42-SAM-Manager
+D42-Auditor-RO
+D42-API-Integration
 
 
 
