@@ -223,40 +223,35 @@ ORDER BY 1
 
 
 
-
 /*
  - Name: C6 Physical Devices by Subtype, Hardware Model and Vendor
- - Purpose: Counts in-service physical devices (end points) by physical subtype, hardware model
-   name and vendor, with a grand total of all physical end points on every row. Devices with
-   no subtype show as "not set"; devices with no hardware model or vendor show as
-   "(no hardware model)" / "(no vendor)".
+ - Purpose: Counts in-service physical devices (end points) by device type, physical subtype,
+   hardware model name and vendor. Devices with no subtype show as "not set"; devices with no
+   hardware model or vendor show as "(no hardware model)" / "(no vendor)".
  - Chart: Table (or Bar: dimension physical_subtype, metric SUM(endpoints))
  - Device42 version: v19.11
  - Date Created: 11/13/26
  - Changes: 11/13/26 Initial version
+            11/13/26 Added device_type column (leftmost); removed total_endpoints column
 */
-SELECT COALESCE(NULLIF(d.physicalsubtype, ''), 'not set')        AS physical_subtype,
+SELECT COALESCE(NULLIF(d.type, ''), 'unknown')                    AS device_type,
+       COALESCE(NULLIF(d.physicalsubtype, ''), 'not set')         AS physical_subtype,
        COALESCE(NULLIF(h.name, ''), '(no hardware model)')        AS hardware_model,
        COALESCE(NULLIF(v.name, ''), '(no vendor)')                AS vendor,
-       COUNT(*)                                                   AS endpoints,
-       SUM(COUNT(*)) OVER ()                                      AS total_endpoints
+       COUNT(*)                                                   AS endpoints
 FROM view_device_v2 d
 LEFT JOIN view_hardware_v1 h ON h.hardware_pk = d.hardware_fk
 LEFT JOIN view_vendor_v1   v ON v.vendor_pk   = h.vendor_fk
 WHERE d.in_service = true
   AND d.type = 'physical'
-GROUP BY 1, 2, 3
-ORDER BY 1, 4 DESC, 2
+GROUP BY 1, 2, 3, 4
+ORDER BY 2, 5 DESC, 3
 
 
 
-
-
-
-
-
-SLM charts (S1–S5)
-
+###################################################
+##              SLM charts (S1–S5)               ##
+###################################################
 
 
 
