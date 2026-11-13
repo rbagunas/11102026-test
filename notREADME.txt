@@ -256,6 +256,53 @@ ORDER BY 1, 2, 5 DESC, 3, 4
 
 
 
+
+/*
+ - Name: C7 Virtual Devices by Subtype, OS Family and OS Name
+ - Purpose: Counts in-service virtual devices (end points) by virtual subtype (Hyper-V, Nutanix
+   AHV, LPAR, Docker Container, Internal VM, etc.), OS family and OS name. Virtual devices with
+   no subtype show as "not set"; devices with no OS show as "(no OS)". OS family is derived from
+   the OS name (Windows, Red Hat, Ubuntu, AIX, etc.).
+ - Chart: Bar (Series virtual_subtype, Breakdowns os_family, metric SUM(endpoints), Stacked Bars)
+ - Device42 version: v19.11
+ - Date Created: 11/13/26
+ - Changes: 11/13/26 Initial version
+*/
+SELECT COALESCE(NULLIF(d.type, ''), 'unknown')                    AS device_type,
+       COALESCE(NULLIF(d.virtualsubtype, ''), 'not set')          AS virtual_subtype,
+       CASE
+         WHEN COALESCE(d.os_name, '') = ''                 THEN '(no OS)'
+         WHEN d.os_name ~* 'windows'                       THEN 'Windows'
+         WHEN d.os_name ~* '(red ?hat|rhel)'               THEN 'Red Hat'
+         WHEN d.os_name ~* 'oracle'                        THEN 'Oracle Linux'
+         WHEN d.os_name ~* 'centos'                        THEN 'CentOS'
+         WHEN d.os_name ~* 'rocky'                         THEN 'Rocky Linux'
+         WHEN d.os_name ~* 'alma'                          THEN 'AlmaLinux'
+         WHEN d.os_name ~* 'ubuntu'                        THEN 'Ubuntu'
+         WHEN d.os_name ~* 'debian'                        THEN 'Debian'
+         WHEN d.os_name ~* '(suse|sles)'                   THEN 'SUSE'
+         WHEN d.os_name ~* '\maix\M'                       THEN 'AIX'
+         WHEN d.os_name ~* '(ibm i|os/400|as/?400)'        THEN 'IBM i'
+         WHEN d.os_name ~* 'linux'                         THEN 'Linux (other)'
+         ELSE 'Other'
+       END                                                        AS os_family,
+       COALESCE(NULLIF(d.os_name, ''), '(no OS)')                 AS os_name,
+       COUNT(*)                                                   AS endpoints
+FROM view_device_v2 d
+WHERE d.in_service = true
+  AND d.type = 'virtual'
+GROUP BY 1, 2, 3, 4
+ORDER BY 2, 5 DESC, 3, 4
+
+
+
+
+
+
+
+
+
+
 ###################################################
 ##              SLM charts (S1–S5)               ##
 ###################################################
