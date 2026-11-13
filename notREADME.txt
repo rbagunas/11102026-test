@@ -223,29 +223,36 @@ ORDER BY 1
 
 
 
+
 /*
- - Name: C6 Physical Devices by Subtype, Hardware Model and Vendor
- - Purpose: Counts in-service physical devices (end points) by device type, physical subtype,
-   hardware model name and vendor. Devices with no subtype show as "not set"; devices with no
-   hardware model or vendor show as "(no hardware model)" / "(no vendor)".
- - Chart: Table (or Bar: dimension physical_subtype, metric SUM(endpoints))
+ - Name: C6 Devices by Type, Physical Subtype, Vendor and Hardware Model
+ - Purpose: Counts in-service devices (end points) by device type (physical, virtual, cluster,
+   unknown, etc.), physical subtype, vendor and hardware model name. Physical devices with no
+   subtype show as "not set"; non-physical devices show physical subtype as "n/a"; devices with
+   no hardware model or vendor show as "(no hardware model)" / "(no vendor)".
+ - Chart: Table (or Sunburst: hierarchy device_type > physical_subtype, metric SUM(endpoints))
  - Device42 version: v19.11
  - Date Created: 11/13/26
  - Changes: 11/13/26 Initial version
             11/13/26 Added device_type column (leftmost); removed total_endpoints column
+            11/13/26 Included all device types; reordered columns to type, subtype, vendor, model
 */
 SELECT COALESCE(NULLIF(d.type, ''), 'unknown')                    AS device_type,
-       COALESCE(NULLIF(d.physicalsubtype, ''), 'not set')         AS physical_subtype,
-       COALESCE(NULLIF(h.name, ''), '(no hardware model)')        AS hardware_model,
+       CASE
+         WHEN d.type = 'physical' THEN COALESCE(NULLIF(d.physicalsubtype, ''), 'not set')
+         ELSE 'n/a'
+       END                                                        AS physical_subtype,
        COALESCE(NULLIF(v.name, ''), '(no vendor)')                AS vendor,
+       COALESCE(NULLIF(h.name, ''), '(no hardware model)')        AS hardware_model,
        COUNT(*)                                                   AS endpoints
 FROM view_device_v2 d
 LEFT JOIN view_hardware_v1 h ON h.hardware_pk = d.hardware_fk
 LEFT JOIN view_vendor_v1   v ON v.vendor_pk   = h.vendor_fk
 WHERE d.in_service = true
-  AND d.type = 'physical'
 GROUP BY 1, 2, 3, 4
-ORDER BY 2, 5 DESC, 3
+ORDER BY 1, 2, 5 DESC, 3, 4
+
+
 
 
 
