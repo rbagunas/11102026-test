@@ -224,6 +224,31 @@ ORDER BY 1
 
 
 
+/*
+ - Name: C6 Physical Devices by Subtype, Hardware Model and Vendor
+ - Purpose: Counts in-service physical devices (end points) by physical subtype, hardware model
+   name and vendor, with a grand total of all physical end points on every row. Devices with
+   no subtype show as "not set"; devices with no hardware model or vendor show as
+   "(no hardware model)" / "(no vendor)".
+ - Chart: Table (or Bar: dimension physical_subtype, metric SUM(endpoints))
+ - Device42 version: v19.11
+ - Date Created: 11/13/26
+ - Changes: 11/13/26 Initial version
+*/
+SELECT COALESCE(NULLIF(d.physicalsubtype, ''), 'not set')        AS physical_subtype,
+       COALESCE(NULLIF(h.name, ''), '(no hardware model)')        AS hardware_model,
+       COALESCE(NULLIF(v.name, ''), '(no vendor)')                AS vendor,
+       COUNT(*)                                                   AS endpoints,
+       SUM(COUNT(*)) OVER ()                                      AS total_endpoints
+FROM view_device_v2 d
+LEFT JOIN view_hardware_v1 h ON h.hardware_pk = d.hardware_fk
+LEFT JOIN view_vendor_v1   v ON v.vendor_pk   = h.vendor_fk
+WHERE d.in_service = true
+  AND d.type = 'physical'
+GROUP BY 1, 2, 3
+ORDER BY 1, 4 DESC, 2
+
+
 
 
 
