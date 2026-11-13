@@ -299,6 +299,67 @@ ORDER BY 2, 5 DESC, 3, 4
 
 
 
+/*
+ - Name: C7a Virtual Devices with No OS
+ - Purpose: Lists in-service virtual devices with a blank OS name, with their virtual host and
+   IPs, to identify VMs not yet covered by in-guest (agent or SSH) discovery.
+ - Chart: Table
+ - Device42 version: v19.11
+ - Date Created: 11/13/26
+ - Changes: 11/13/26 Initial version
+*/
+SELECT COALESCE(NULLIF(d.virtualsubtype, ''), 'not set')   AS virtual_subtype,
+       d.name                                              AS device_name,
+       COALESCE(hst.name, '(no host)')                     AS virtual_host,
+       COALESCE(ip.ips, '(no IP)')                         AS ip_addresses,
+       d.last_updated
+FROM view_device_v2 d
+LEFT JOIN view_device_v2 hst ON hst.device_pk = d.virtual_host_device_fk
+LEFT JOIN LATERAL (
+  SELECT string_agg(DISTINCT host(i.ip_address)::text, ', ') AS ips
+  FROM view_ipaddress_v1 i
+  WHERE i.device_fk = d.device_pk
+) ip ON true
+WHERE d.in_service = true
+  AND d.type = 'virtual'
+  AND COALESCE(d.os_name, '') = ''
+ORDER BY 1, 3, 2
+
+
+
+
+
+/*
+ - Name: C7b Possible Duplicate VMs (No-OS vs With-OS)
+ - Purpose: Pairs no-OS virtual devices with another in-service device whose short name matches
+   and which has an OS, indicating the hypervisor record and the in-guest record did not merge.
+ - Chart: Table
+ - Device42 version: v19.11
+ - Date Created: 11/13/26
+ - Changes: 11/13/26 Initial version
+*/
+SELECT a.name                                         AS no_os_device,
+       COALESCE(NULLIF(a.virtualsubtype, ''), 'not set') AS virtual_subtype,
+       b.name                                         AS matching_device,
+       b.type                                         AS matching_type,
+       b.os_name                                      AS matching_os
+FROM view_device_v2 a
+JOIN view_device_v2 b
+  ON lower(split_part(b.name, '.', 1)) = lower(split_part(a.name, '.', 1))
+ AND b.device_pk <> a.device_pk
+WHERE a.in_service = true AND b.in_service = true
+  AND a.type = 'virtual'
+  AND COALESCE(a.os_name, '') = ''
+  AND COALESCE(b.os_name, '') <> ''
+ORDER BY 1
+
+
+
+
+
+
+
+
 
 
 
